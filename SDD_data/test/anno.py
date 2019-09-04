@@ -1,0 +1,64 @@
+# coding:UTF-8
+# 手動でデータを選別するプログラム
+import os
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+from glob import glob
+
+DATA = './*/*/'
+IMAGE= './*/*/'
+SAVE_DATA = 'annotations4.txt'
+SAVE_IMAGE= 'image.png'
+
+def main():
+    # 読み込むディレクトリ指定
+    data_path, image_path = os.path.join(DATA), os.path.join(IMAGE)
+    data_path, image_path = glob(data_path), glob(image_path)
+    data_path.sort()
+    image_path.sort()
+    # ディレクトリ毎にデータと画像を読み込む
+    for p, i in zip(data_path, image_path):
+        data = np.genfromtxt(p + 'annotations2.txt', delimiter=' ')
+        unique_id = np.unique(data[:, 0])
+        image = cv2.imread(i + 'reference.jpg')
+        print((image.shape))
+        # 格納する配列を用意
+        save_array = np.empty((0, 10), dtype=np.int32)
+        # データセットのID毎に読み込む
+        for id in unique_id:
+            data_id = data[data[:, 0] == id, :]
+            # 抽出したIDから見えない対象は削除し、(x,y)座標を抽出
+            data_id = data_id[data_id[:, 6] == 0, :]
+            x = (data_id[:, 1] + data_id[:, 3])/2
+            y = (data_id[:, 2] + data_id[:, 4])/2
+            plt.figure()
+            plt.imshow(image)
+            plt.xlim(0, image.shape[1])
+            plt.ylim(image.shape[0], 0)
+            plt.plot(x, y, color='b', linewidth='1')
+            plt.savefig(i + SAVE_IMAGE)
+            plt.clf()
+            plot_image = glob(i + SAVE_IMAGE)
+            plot_image = cv2.imread(plot_image[0])
+            # キーボードイベント
+            while True:
+                cv2.imshow(str(id), plot_image)
+                key = cv2.waitKey(1)&0xff
+                # qが押されたら何もしない
+                if key == ord('q'):
+                    os.remove(i + SAVE_IMAGE)
+                    cv2.destroyAllWindows()
+                    break
+                # sが押されたら配列に格納
+                elif key == ord('s'):
+                    save_array = np.append(save_array, data_id, axis=0)
+                    # 画像の削除
+                    os.remove(i + SAVE_IMAGE)
+                    cv2.destroyAllWindows()
+                    break
+        # テキストを保存
+        np.savetxt(p + SAVE_DATA, save_array, fmt='%.1d', delimiter=' ')
+
+if __name__ == '__main__':
+    main()

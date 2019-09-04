@@ -1,0 +1,7 @@
+Biker = 1
+Pedestrian = 2
+Cart = 3
+Car = 4
+Bus = 5
+Skater = 6
+
